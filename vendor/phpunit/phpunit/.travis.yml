@@ -1,27 +1,58 @@
 language: php
 
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - libxml2-utils
+
 php:
-    - 5.3
-    - 5.4
+  - 7.2
+  - 7.3
+  - 7.4snapshot
+
+matrix:
+  fast_finish: true
 
 env:
-    - INSTALL_PHP_INVOKER=0
-    - INSTALL_PHP_INVOKER=1
+  matrix:
+    - DEPENDENCIES="high"
+    - DEPENDENCIES="low"
+  global:
+    - DEFAULT_COMPOSER_FLAGS="--no-interaction --no-ansi --no-progress --no-suggest"
+
+before_install:
+  - ./tools/composer clear-cache
+
+install:
+  - if [[ "$DEPENDENCIES" = 'high' ]]; then travis_retry ./tools/composer update $DEFAULT_COMPOSER_FLAGS; fi
+  - if [[ "$DEPENDENCIES" = 'low' ]]; then travis_retry ./tools/composer update $DEFAULT_COMPOSER_FLAGS --prefer-lowest; fi
 
 before_script:
-    - mkdir vendor
-    - git clone --branch=master --depth=100 --quiet git://github.com/sebastianbergmann/php-text-template.git vendor/php-text-template
-    - git clone --branch=master --depth=100 --quiet git://github.com/sebastianbergmann/php-token-stream.git vendor/php-token-stream
-    - git clone --branch=master --depth=100 --quiet git://github.com/sebastianbergmann/php-file-iterator.git vendor/php-file-iterator
-    - git clone --branch=1.2 --depth=100 --quiet git://github.com/sebastianbergmann/php-code-coverage.git vendor/php-code-coverage
-    - git clone --branch=1.2 --depth=100 --quiet git://github.com/sebastianbergmann/phpunit-mock-objects.git vendor/phpunit-mock-objects
-    - git clone --branch=1.0 --depth=100 --quiet git://github.com/sebastianbergmann/php-timer.git vendor/php-timer
-    - git clone --branch=master --depth=100 --quiet git://github.com/pear/pear-core.git vendor/pear-core
-    - git clone --branch=trunk --depth=100 --quiet git://github.com/pear/Console_Getopt.git vendor/console-getopt
-    - sh -c "if [ '$INSTALL_PHP_INVOKER' = '1' ]; then git clone --branch=1.1 --depth=100 --quiet git://github.com/sebastianbergmann/php-invoker.git vendor/php-invoker; fi"
+  - echo 'zend.assertions=1' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
+  - echo 'assert.exception=On' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
 
-script: php -d include_path=vendor/php-text-template:vendor/php-token-stream:vendor/php-file-iterator:vendor/php-code-coverage:vendor/phpunit-mock-objects:vendor/php-timer:vendor/version:vendor/pear-core:vendor/console-getopt:. ./phpunit.php --configuration ./build/travis-ci.xml
+script:
+  - ./phpunit --coverage-clover=coverage.xml
+  - ./phpunit --configuration ./build/travis-ci-fail.xml > /dev/null; if [ $? -eq 0 ]; then echo "SHOULD FAIL"; false; else echo "fail checked"; fi;
+  - xmllint --noout --schema phpunit.xsd phpunit.xml
+  - xmllint --noout --schema phpunit.xsd tests/_files/configuration.xml
+  - xmllint --noout --schema phpunit.xsd tests/_files/configuration_empty.xml
+  - xmllint --noout --schema phpunit.xsd tests/_files/configuration_xinclude.xml -xinclude
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
 
 notifications:
   email: false
-  irc: "irc.freenode.org#phpunit"
+
+jobs:
+  include:
+    - stage: Static Code Analysis
+      php: 7.3
+      env: php-cs-fixer
+      install:
+        - phpenv config-rm xdebug.ini
+      script:
+        - ./tools/php-cs-fixer fix --dry-run -v --show-progress=dots --diff-format=udiff

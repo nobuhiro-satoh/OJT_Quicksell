@@ -7,5 +7,4 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'phpUnitTutorial' => array($baseDir . '/'),
-    'Symfony\\Component\\Yaml' => array($vendorDir . '/symfony/yaml'),
 );
