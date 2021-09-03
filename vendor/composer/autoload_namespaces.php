@@ -7,4 +7,5 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'phpUnitTutorial' => array($baseDir . '/'),
+    'App' => array($baseDir . '/'),
 );

@@ -30,7 +30,7 @@ private static $installed = array (
     'aliases' => 
     array (
     ),
-    'reference' => '126ce9534dea376777dcb25d1cbf207dc2b6e199',
+    'reference' => '30aa34edeb5863f07b3bac72f0c286afa1dbe483',
     'name' => '__root__',
   ),
   'versions' => 
@@ -42,7 +42,7 @@ private static $installed = array (
       'aliases' => 
       array (
       ),
-      'reference' => '126ce9534dea376777dcb25d1cbf207dc2b6e199',
+      'reference' => '30aa34edeb5863f07b3bac72f0c286afa1dbe483',
     ),
     'ajbdev/authorizenet-php-api' => 
     array (
